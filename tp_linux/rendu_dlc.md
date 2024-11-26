@@ -64,3 +64,56 @@ ls /mnt/secure_data/
 ````
 
 # Étape 3 : Renforcement du pare-feu avec des règles dynamiques
+
+1. Bloquer les attaques par force brute
+
+````
+[root@localhost audit]# firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="0.0.0.0/0" service name="ssh" log prefix="SSH_ATTEMPT" level="info" limit value="1/m" drop'
+````
+
+2. Restreindre l’accès SSH à une plage IP spécifique 
+
+````
+firewall-cmd --permanent --zone=trusted --add-source=192.168.0.0/22
+firewall-cmd --reload
+````
+
+3. Créer une zone sécurisée pour un service web
+````
+[root@localhost audit]# sudo firewall-cmd --permanent --new-zone=web_secure
+[root@localhost audit]#sudo firewall-cmd --permanent --zone=web_secure --add-service=http --add-service=https
+[root@localhost audit]#sudo firewall-cmd --permanent --zone=web_secure --change-interface=enp0s3
+[root@localhost audit]#sudo firewall-cmd --reload
+````
+
+# Étape 4 : Création d'un script de surveillance avancé
+1. Écrivez un script monitor.sh :
+
+````
+#!/bin/bash
+LOG_FILE="/var/log/monitor.log"
+echo "$(date): Surveillance démarrée." >> $LOG_FILE
+
+# Connexions actives
+ss -tunap >> $LOG_FILE
+
+# Fichiers modifiés
+inotifywait -r /etc -e modify -e create -e delete >> $LOG_FILE &
+````
+
+2. Ajoutez une alerte par e-mail 
+````
+echo "Modification détectée" | mail -s "Alerte de modification" wheelroot@root.fr
+````
+
+3. Automatisez le script 
+````
+*/5 * * * * /home/monitor.sh
+````
+
+# Étape 5 : Mise en place d’un IDS (Intrusion Detection System)
+ 1. Installer et configurer AIDE :
+ ````
+ [root@localhost home]# yum install aide
+[root@localhost home]# sudo aide -i
+````
